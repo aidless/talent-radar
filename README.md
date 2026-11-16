@@ -7,7 +7,7 @@
 这不是心理测评认证工具，结果只作为自我观察与后续验证的假设。
 
 ## 功能
-- **在线 Demo**：[https://aidless.github.io/talent-radar/](https://aidless.github.io/talent-radar/)（静态版；AI 深挖与数据池接口需本地 `serve.py`）。
+- **在线 Demo**：[https://aidless.github.io/talent-radar/](https://aidless.github.io/talent-radar/)（静态版；由 `pages.yml` 从 main 分支自动部署，AI 深挖与数据池接口需本地 `serve.py`）。
 - **快速自测**：40 题 × 10 维，端到端本地运行，结果存浏览器 localStorage。
 - **雷达结果**：组合命名、top3 维度、自评 vs 行为差距、并列敏感度、30 天验证实验方向。
 - **分享卡片**：1080×1440 PNG，Canvas 本地绘制，不上传图片。
