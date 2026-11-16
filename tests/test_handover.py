@@ -5,8 +5,10 @@ import subprocess
 import unittest
 import zipfile
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-TD = os.path.join(ROOT, "talent-radar")
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+TD = os.environ.get("TALENT_RADAR_ROOT", os.path.join(ROOT, "talent-radar"))
+if not os.path.isdir(TD):
+    TD = ROOT
 
 
 class TestHandover(unittest.TestCase):
