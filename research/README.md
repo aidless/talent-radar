@@ -3,6 +3,7 @@
 这里记录 30 天真人使用的观察量，不是心理测评认证。
 
 ## 文件
+- `STATUS.md`：当前状态与 Go/No-Go；现在是「材料就绪、未招募、无结果」。
 - `recruit.md`：20–30 人招募文案、纳入排除、知情同意、时间线。
 - `feedback-form.md`：每日 1 题 + 第 0/14/30 天量表与 CSV 模板。
 - `analyze.py`：只读结构化列，输出 `n / retained_day30 / retest_corr / self_beh_gap_mean / gap_abs_p90 / third_party_agreement / drop_rate / confidence`。

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Talent Radar · Case Study</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--card:#121a2f;--ink:#eef3ff;--dim:#9fabc4;--accent:#6ee7c7;--line:#263353}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(1200px 700px at 15% -10%,#1b2a50 0,transparent 55%),var(--bg);color:var(--ink);font:15px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:48px 24px 72px}.tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:4px 12px;color:var(--accent);font-size:13px}
+h1{font-size:42px;line-height:1.15;margin:20px 0 12px}.sub{color:var(--dim);max-width:760px;font-size:17px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:28px 0}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}.card h3{margin:0 0 8px;font-size:17px}.card p{margin:0;color:var(--dim)}
+a{color:var(--accent)}.links{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}.links a{border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-decoration:none;background:#0f1730}
+section{margin-top:36px}h2{font-size:24px;border-bottom:1px solid var(--line);padding-bottom:8px}ul{padding-left:20px}li{margin:8px 0}.limit{background:#241a24;border-color:#5b3546}.foot{color:var(--dim);font-size:13px;margin-top:40px}
+code{background:#0a1124;padding:2px 5px;border-radius:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<span class="tag">Commercial tool · side line</span>
+<h1>Talent Radar · 天赋雷达</h1>
+<p class="sub">一个本地优先的结构化自省工具：40 道题 × 10 维，把自评、行为证据与他人反馈分开呈现，再把结论压成可验证的具体行动。</p>
+<div class="links">
+<a href="https://github.com/aidless/talent-radar">GitHub 仓库</a>
+<a href="https://aidless.github.io/talent-radar/">在线 Demo</a>
+<a href="https://github.com/aidless/talent-radar/releases/tag/v1.0.0">v1.0.0 Release</a>
+</div>
+<div class="grid">
+<div class="card"><h3>测评引擎</h3><p>40 题交错覆盖 10 维；行为 / 反馈 / 自评三轨加权；结果页显示差距与并列敏感度，近并列不硬排第一。</p></div>
+<div class="card"><h3>本地导出</h3><p>单文件 HTML、localStorage、雷达 SVG、1080×1440 分享 PNG、文字报告与 JSON 导出，无运行时依赖。</p></div>
+<div class="card"><h3>AI 追问协议</h3><p>深度挖掘、反证官、落地三段 Prompt；一次一题追问事件，证据不足允许 0–3 项，不强行凑结论。</p></div>
+</div>
+<section>
+<h2>工程要点</h2>
+<ul>
+<li>前端是零依赖单文件 HTML；Canvas 直绘分享卡，SVG 转 PNG，数据默认只留 localStorage。</li>
+<li><code>serve.py</code> 同源托管并反代 OpenAI-compatible 网关，解决 file:// 下 CORS 问题。</li>
+<li>匿名贡献默认关闭、二次确认；30 天窗口按 contributor_hash 去重，n≥500 ready，n&lt;200 cut。</li>
+<li>CI 跑 15 项 Python 与 6 项 JavaScript 检查；GitHub Pages 部署静态 Demo；Release 附带 product zip。</li>
+</ul>
+</section>
+<section>
+<h2>证据边界</h2>
+<div class="card limit">
+<p>静态 Demo 没有后端：AI 深挖与数据池接口需本地 <code>serve.py</code>。这是结构化自省工具，<strong>不是心理测评认证、心理诊断或信度效度已验证的产品</strong>。</p>
+<p>真人验证包已就绪，但当前状态是「材料就绪、未招募、无结果」。数据池代码与阈值已实现，实际样本数尚未产生。</p>
+</div>
+</section>
+<section>
+<h2>适合怎么讲</h2>
+<ul>
+<li>一句话：把「我觉得」压成「我做过」，再用反证与 30 天实验验证。</li>
+<li>工程面：单文件离线引擎 + 双轨差距信号 + Canvas 导出 + 同源反代 + 默认关闭的隐私设计。</li>
+<li>产品面：从提示词想法走到开源仓库、CI、Pages Demo、Release 与发布文案的完整副线闭环。</li>
+</ul>
+</section>
+<p class="foot">页面维护：更新链接、Release 号、测试结果或验证状态时同步修改本文件与 portfolio/README.md。</p>
+</div>
+</body>
+</html>
