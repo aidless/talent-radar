@@ -1,0 +1,1659 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>天赋雷达 · 用 AI 挖出你自己的天赋</title>
+<style>
+  /* ---------- 基础 ---------- */
+  :root{
+    --bg:#0b0f17;
+    --card:#141a26;
+    --card2:#1a2130;
+    --line:#26303f;
+    --fg:#e8edf5;
+    --fg2:#95a3b8;
+    --acc:#5eead4;
+    --acc2:#7c9cff;
+    --warn:#fbbf24;
+    --dim:#64748b;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #17304a55, transparent),
+      radial-gradient(900px 500px at 95% 0%, #2a1f4a55, transparent),
+      var(--bg);
+    color:var(--fg);
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,"Segoe UI",sans-serif;
+    line-height:1.65;
+    min-height:100vh;
+  }
+  .app{max-width:960px;margin:0 auto;padding:28px 20px 80px;}
+
+  /* ---------- 头部 ---------- */
+  header h1{
+    font-size:26px;margin:0 0 6px;letter-spacing:.5px;
+    background:linear-gradient(92deg,var(--acc),var(--acc2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  header .sub{color:var(--fg2);font-size:13.5px;margin:0 0 20px;}
+
+  /* ---------- 标签页 ---------- */
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+  .tabs button{
+    background:var(--card);color:var(--fg2);border:1px solid var(--line);
+    padding:9px 16px;border-radius:10px;font-size:13.5px;cursor:pointer;
+    font-family:inherit;transition:.16s;
+  }
+  .tabs button:hover{color:var(--fg);border-color:#3a475c;}
+  .tabs button.on{
+    color:#08211c;background:linear-gradient(92deg,var(--acc),#5eead4cc);
+    border-color:transparent;font-weight:600;
+  }
+
+  /* ---------- 卡片 ---------- */
+  .card{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:16px;padding:22px;margin-bottom:16px;
+  }
+  .card h2{font-size:17px;margin:0 0 12px;}
+  .card h3{font-size:14.5px;margin:18px 0 8px;color:var(--acc);}
+  .card p{color:var(--fg2);font-size:14px;margin:0 0 12px;}
+  .card ul{color:var(--fg2);font-size:14px;padding-left:20px;margin:0 0 12px;}
+  .card li{margin-bottom:6px;}
+
+  /* ---------- 按钮 ---------- */
+  .btn{
+    background:linear-gradient(92deg,var(--acc),#4ad9c4);color:#06201c;
+    border:none;border-radius:10px;padding:11px 22px;font-size:14.5px;
+    font-weight:600;cursor:pointer;font-family:inherit;transition:.16s;
+  }
+  .btn:hover{filter:brightness(1.08);transform:translateY(-1px);}
+  .btn.ghost{
+    background:transparent;color:var(--fg);border:1px solid var(--line);
+    font-weight:500;
+  }
+  .btn.ghost:hover{border-color:var(--acc);color:var(--acc);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+
+  /* ---------- 答题 ---------- */
+  .bar{height:6px;background:#0d1219;border-radius:99px;overflow:hidden;margin:4px 0 18px;}
+  .bar>i{display:block;height:100%;width:0;
+    background:linear-gradient(90deg,var(--acc2),var(--acc));transition:width .25s;}
+  .meta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--dim);margin-bottom:6px;}
+  .qtext{font-size:18px;line-height:1.7;margin:6px 0 20px;min-height:62px;}
+  .opts{display:flex;gap:8px;flex-wrap:wrap;}
+  .opts button{
+    flex:1 1 130px;background:var(--card2);border:1px solid var(--line);
+    color:var(--fg);border-radius:10px;padding:13px 8px;font-size:13.5px;
+    cursor:pointer;font-family:inherit;transition:.14s;
+  }
+  .opts button:hover{border-color:var(--acc2);background:#1e2739;}
+  .opts button.sel{border-color:var(--acc);background:#0e2f2b;color:var(--acc);}
+  .opts button small{display:block;color:var(--dim);font-size:11px;margin-top:2px;}
+  .tag{
+    display:inline-block;font-size:11px;padding:1px 8px;border-radius:99px;
+    border:1px solid var(--line);color:var(--dim);margin-right:6px;
+  }
+  .tag.beh{color:#5eead4;border-color:#1c4a44;}
+  .tag.self{color:#c4b5fd;border-color:#3b3263;}
+  .tag.fb{color:#93c5fd;border-color:#1e3a5f;}
+
+  /* ---------- 结果 ---------- */
+  .resgrid{display:grid;grid-template-columns:340px 1fr;gap:20px;}
+  @media(max-width:760px){.resgrid{grid-template-columns:1fr;}}
+  .radarwrap{display:flex;align-items:center;justify-content:center;}
+  .barline{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:13px;}
+  .barline .nm{width:74px;color:var(--fg2);flex:none;}
+  .barline .tk{flex:1;height:8px;background:#0d1219;border-radius:99px;overflow:hidden;}
+  .barline .tk>i{display:block;height:100%;border-radius:99px;
+    background:linear-gradient(90deg,#3b82f688,var(--acc));}
+  .barline .vl{width:36px;text-align:right;color:var(--fg);font-variant-numeric:tabular-nums;}
+  .top3{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 4px;}
+  .chip{
+    background:#0e2f2b;border:1px solid #1c4a44;color:var(--acc);
+    border-radius:99px;padding:5px 14px;font-size:13px;
+  }
+  .chip.sec{background:#141c33;border-color:#25335a;color:#9db4ff;}
+  .callout{
+    background:#1a2130;border-left:3px solid var(--warn);
+    border-radius:8px;padding:12px 14px;font-size:13.5px;color:#e2cb9a;margin:12px 0;
+  }
+  .name-big{font-size:22px;font-weight:700;color:var(--fg);margin:2px 0 4px;}
+  .klist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:10px 0;}
+  .klist span{background:var(--card2);border:1px solid var(--line);
+    border-radius:8px;padding:7px 10px;font-size:13px;color:var(--fg2);}
+
+  /* ---------- 代码块 ---------- */
+  .codebox{position:relative;}
+  pre{
+    background:#0a0e15;border:1px solid var(--line);border-radius:12px;
+    padding:16px;overflow:auto;font-size:12.8px;line-height:1.72;color:#c7d3e3;
+    max-height:440px;white-space:pre-wrap;word-break:break-word;
+    font-family:"SF Mono",Menlo,Consolas,"Courier New",monospace;
+  }
+  .copybar{display:flex;justify-content:space-between;align-items:center;margin:6px 0;}
+  .copybar b{font-size:13.5px;color:var(--fg);}
+
+  /* ---------- 其它 ---------- */
+  .hidden{display:none !important;}
+  .foot{color:var(--dim);font-size:12px;text-align:center;margin-top:34px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;color:var(--fg2);}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);}
+  th{color:var(--fg);font-weight:600;}
+  .toast{
+    position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);
+    background:#0e2f2b;border:1px solid #1c4a44;color:var(--acc);
+    padding:10px 20px;border-radius:10px;font-size:13.5px;
+    opacity:0;pointer-events:none;transition:.25s;z-index:99;
+  }
+  /* ---------- AI 深挖聊天 ---------- */
+  .chatlog{
+    height:380px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;
+    padding:14px;background:#0a0e15;display:flex;flex-direction:column;gap:10px;
+  }
+  .msg{max-width:86%;padding:10px 14px;border-radius:12px;font-size:13.5px;line-height:1.65;white-space:pre-wrap;}
+  .msg.ai{align-self:flex-start;background:#131b28;border:1px solid var(--line);color:var(--fg2);}
+  .msg.me{align-self:flex-end;background:#0e2f2b;border:1px solid #1c4a44;color:var(--fg);}
+  .msg.sys{align-self:center;color:var(--dim);font-size:12px;background:none;}
+  .chatrow{display:flex;gap:10px;margin-top:12px;}
+  .chatrow textarea{
+    flex:1;min-height:52px;resize:vertical;background:#0a0e15;border:1px solid var(--line);
+    border-radius:10px;color:var(--fg);padding:10px 12px;font:inherit;font-size:13.5px;
+  }
+  .chatrow textarea:focus{outline:none;border-color:var(--acc);}
+  .cfgrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;font-size:13px;color:var(--fg2);}
+  .cfgrow input{
+    background:#0a0e15;border:1px solid var(--line);border-radius:8px;color:var(--fg);
+    padding:7px 10px;font:inherit;font-size:13px;width:320px;
+  }
+  .cfgrow input:focus{outline:none;border-color:var(--acc);}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;}
+  .dot.ok{background:#34d399;} .dot.bad{background:#f87171;}
+
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>天赋雷达</h1>
+    <p class="sub">40 题结构化自测 + 10 维雷达图 + 一套可直接投喂 ChatGPT / Gemini 的深度挖掘 Prompt。<br>
+    纯本地运行，答案只存在你这台机器的浏览器里。</p>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="test" class="on">① 快速自测</button>
+    <button data-tab="ai">② AI 深度问答 Prompt</button>
+    <button data-tab="method">③ 打分怎么算的</button>
+    <button data-tab="live">④ AI 深挖（本地）</button>
+  </nav>
+
+  <!-- ========== ① 自测 ========== -->
+  <section id="tab-test">
+
+    <!-- 开始页 -->
+    <div id="panel-intro">
+      <div class="card">
+        <h2>先说清楚这个工具在测什么</h2>
+        <p>天赋不是「我喜不喜欢」，而是三件事同时成立：</p>
+        <ul>
+          <li><b>自发做</b>——没人要求你也会去做（不费意志力）</li>
+          <li><b>上手快</b>——同样的投入，你的产出比别人多</li>
+          <li><b>有正反馈</b>——做完之后你自己或别人给了好的反馈</li>
+        </ul>
+        <p>所以这 40 道题里，<span class="tag beh">行为题</span>问的是「过去真发生过什么」，权重 1.0；
+        <span class="tag fb">反馈题</span>问的是「别人怎么说」，权重 0.8；
+        <span class="tag self">自评题</span>问的是「你怎么感觉」，权重只有 0.6——因为感觉自己最容易被想象污染。</p>
+        <div class="callout" id="intro-callout">答题纪律：只按<b>过去一年真实发生过的事</b>打勾。答「我希望我是这样」会让整张图失真，图就没用了。</div>
+        <div class="btnrow">
+          <button class="btn" id="btn-start">开始 40 题（约 6 分钟）</button>
+          <button class="btn ghost hidden" id="btn-resume">继续上次进度</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 答题页 -->
+    <div id="panel-quiz" class="hidden">
+      <div class="card">
+        <div class="meta">
+          <span id="q-idx">第 1 / 40 题</span>
+          <span id="q-dim">语言表达</span>
+        </div>
+        <div class="bar"><i id="q-bar"></i></div>
+        <div style="margin-bottom:6px">
+          <span class="tag" id="q-tag">行为题</span>
+        </div>
+        <div class="qtext" id="q-text"></div>
+        <div class="opts" id="q-opts"></div>
+        <div class="btnrow">
+          <button class="btn ghost" id="btn-prev">上一题</button>
+          <button class="btn ghost" id="btn-reset">重新开始</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 结果页 -->
+    <div id="panel-result" class="hidden">
+      <div class="card">
+        <h2>你的天赋雷达</h2>
+        <div class="resgrid">
+          <div class="radarwrap"><div id="radar"></div></div>
+          <div>
+            <div id="nameline"></div>
+            <div class="top3" id="top3"></div>
+            <div id="bars" style="margin-top:16px"></div>
+          </div>
+        </div>
+        <div id="gapnote"></div>
+      </div>
+
+      <div class="card">
+        <h2>接下来做什么</h2>
+        <div id="advice"></div>
+      </div>
+
+      <div class="card">
+        <h2>这个结果可以拿去干什么</h2>
+        <div class="klist" id="directions"></div>
+        <div class="btnrow">
+          <button class="btn" id="btn-share">生成分享卡片</button>
+          <button class="btn" id="btn-career">生成求职定位</button>
+          <button class="btn" id="btn-copy-report">复制文字报告</button>
+          <button class="btn ghost" id="btn-png">下载雷达图 PNG</button>
+          <button class="btn ghost" id="btn-json">导出 JSON</button>
+          <button class="btn ghost" id="btn-again">重做一次</button>
+        </div>
+        <div id="contrib-card" class="card" style="margin-top:16px;padding:14px;background:rgba(255,255,255,.04)">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px">
+            <input type="checkbox" id="contrib-toggle"> 匿名贡献本次结果（默认关闭）
+          </label>
+          <p style="margin:8px 0;font-size:12px;color:var(--dim)">
+            仅在勾选并点击上传后，才发送去标识化分数、答题分段与匿名哈希；不收姓名、联系方式或开放文本原文。
+            关闭状态下本工具不发起任何网络请求，结果仍只保存在本机。
+          </p>
+          <button class="btn ghost" id="contrib-upload" style="display:none">上传本次匿名结果</button>
+        </div>
+        <p style="margin-top:14px;font-size:12.5px;color:var(--dim)">
+          想要更准？把这张图的结论丢给 ② 里的 Prompt，让 AI 用追问的方式把「你觉得」换成「你做过」。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== ② AI Prompt ========== -->
+  <section id="tab-ai" class="hidden">
+
+    <div class="card">
+      <h2>为什么用问答而不是做选择题</h2>
+      <p>选择题卖得好，是因为便宜；但它只测「你对自己的看法」。真正能撑住的判断，来自<b>具体事件</b>：
+      什么时候、什么事、你做了什么、结果怎样、这事重复过几次。所以下面这套 Prompt 的核心不是「问 100 个问题」，
+      而是<b>每一层追问都逼出可验证的行为证据</b>。</p>
+      <p>用法：复制 → 粘进 ChatGPT / Gemini / Claude → 它会一次只问一题，你老实回答就行。</p>
+    </div>
+
+    <div class="card">
+      <div class="copybar"><b>Prompt A · 深度挖掘（主流程）</b>
+        <button class="btn ghost" data-copy="pA">复制</button></div>
+      <pre id="pA"></pre>
+    </div>
+
+    <div class="card">
+      <div class="copybar"><b>Prompt B · 反证官（防止自我美化）</b>
+        <button class="btn ghost" data-copy="pB">复制</button></div>
+      <p style="margin-bottom:10px">把 A 跑完之后，把结论贴进来，让 AI 专门找反例。90% 的天赋测试都缺这一步。</p>
+      <pre id="pB"></pre>
+    </div>
+
+    <div class="card">
+      <div class="copybar"><b>Prompt C · 落地（把结论变成 30 天动作）</b>
+        <button class="btn ghost" data-copy="pC">复制</button></div>
+      <pre id="pC"></pre>
+    </div>
+
+  </section>
+
+  <!-- ========== ④ AI 深挖（本地网关） ========== -->
+  <section id="tab-live" class="hidden">
+
+    <div class="card">
+      <h2>本地 AI 深挖</h2>
+      <p>不用复制 Prompt 去别的软件：右键结果页的结论直接进入追问流程。AI 会<b>一次只问一题</b>，
+      把「你觉得」压成「你做过」，问透后一键出洞察报告。走你本机的 Magpie 网关，对话不经过第三方页面。</p>
+      <div class="cfgrow">
+        <span id="gw-status"><span class="dot" id="gw-dot"></span><span id="gw-text">未检测</span></span>
+        <label>模型 <input id="ai-model" value="opencode-go/deepseek-v4.1-flash"></label>
+        <button class="btn ghost" id="btn-gw-check">检测网关</button>
+      </div>
+      <p style="font-size:12.5px;color:var(--dim)">
+        需要先启动本地服务（同源反代，绕开浏览器跨域限制）：<code>python3 serve.py</code>，
+        然后从 <code>http://127.0.0.1:8018</code> 打开本页。直接双击打开 HTML 也能用其余功能，只是 AI 深挖不可用。
+      </p>
+    </div>
+
+    <div class="card" id="live-card">
+      <div id="live-empty" style="color:var(--dim);font-size:13.5px">
+        还没有测评结果——先去 ① 快速自测做完 40 题，再来这里让 AI 深挖。
+      </div>
+      <div id="live-main" class="hidden">
+        <div class="chatlog" id="chatlog"></div>
+        <div class="chatrow">
+          <textarea id="chat-input" placeholder="回答 AI 的问题，尽量给具体事件：什么时候、什么事、你做了什么、结果如何……"></textarea>
+          <button class="btn" id="btn-chat-send">发送</button>
+        </div>
+        <div class="btnrow" style="margin-top:12px">
+          <button class="btn ghost" id="btn-chat-report">问透了，生成洞察报告</button>
+          <button class="btn ghost" id="btn-chat-reset">清空重聊</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ========== ③ 方法 ========== -->
+  <section id="tab-method" class="hidden">
+    <div class="card">
+      <h2>10 个维度是哪来的</h2>
+      <p>前 8 维取自加德纳多元智能框架（语言、逻辑数学、空间、音乐、身体动觉、人际、内省、自然观察），
+      后 2 维（学习迁移、创造突破）是近二十年能力研究里对「可变性」和「原创性」的补充。
+      它不预测你会成为谁，只描述<b>你当前的能量流向</b>。</p>
+      <table>
+        <tr><th>维度</th><th>高分意味着</th><th>典型过度使用</th></tr>
+        <tr><td>语言表达</td><td>能把复杂的东西讲成人话</td><td>说得比做得好</td></tr>
+        <tr><td>逻辑推理</td><td>能拆到前提层再重建</td><td>分析瘫痪，迟迟不动手</td></tr>
+        <tr><td>空间视觉</td><td>脑内能先建模型再动手</td><td>完美主义反复返工</td></tr>
+        <tr><td>音乐节奏</td><td>对声音/节奏/韵律敏感</td><td>感受强、输出少</td></tr>
+        <tr><td>身体动觉</td><td>靠手和身体思考</td><td>用体力硬扛，不建系统</td></tr>
+        <tr><td>人际洞察</td><td>能读出没说出口的部分</td><td>情绪劳动过载、边界糊</td></tr>
+        <tr><td>内省自省</td><td>能给自己做归因审计</td><td>想太多、不动</td></tr>
+        <tr><td>细节观察</td><td>看得到别人略过的差异</td><td>观察多、结论少</td></tr>
+        <tr><td>学习迁移</td><td>换个领域照样跑得起来</td><td>样样浅尝、不深耕</td></tr>
+        <tr><td>创造突破</td><td>会真的去试没做过的事</td><td>开头多、收尾少</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>2026 现实提醒</h2>
+      <p>AI 抹平的是「能做」，不是「判断做哪个」。所以这张图最该用来看的不是「哪根柱子最高」，
+      而是：<b>哪两维同时高</b>——两维交叉才是稀缺组合，单维都能被替代。</p>
+      <p>以及：<b>哪一维是行为分远高于自评分</b>。那说明你其实一直在做，只是没把它算成天赋。
+      多数人被低估的正是这一块。</p>
+    </div>
+  </section>
+
+  <p class="foot">本地文件 · 默认无网络请求（仅手动开启匿名贡献时上传）· 数据存于浏览器 localStorage</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   1. 维度定义
+   ========================================================= */
+const DIMS = [
+  {k:'lang',   n:'语言表达', a:'叙事'},
+  {k:'logi',   n:'逻辑推理', a:'结构'},
+  {k:'spat',   n:'空间视觉', a:'空间'},
+  {k:'music',  n:'音乐节奏', a:'节奏'},
+  {k:'body',   n:'身体动觉', a:'手感'},
+  {k:'inter',  n:'人际洞察', a:'共情'},
+  {k:'intra',  n:'内省自省', a:'内省'},
+  {k:'nature', n:'细节观察', a:'观察'},
+  {k:'learn',  n:'学习迁移', a:'迁移'},
+  {k:'create', n:'创造突破', a:'破局'}
+];
+const DIM_NAME = {};
+DIMS.forEach(d => DIM_NAME[d.k] = d.n);
+
+/* =========================================================
+   2. 题库：w=权重，type=beh/fb/self
+   ========================================================= */
+const QUESTIONS = [
+  /* --- 语言表达 --- */
+  {k:'lang', w:1.0, t:'beh',  q:'过去一个月，我有 3 次以上为了把一件事讲清楚，主动写了 500 字以上，或做了公开讲解。'},
+  {k:'lang', w:0.8, t:'fb',   q:'身边人常用「表达清楚」「会讲」「写得好」这类词形容我。'},
+  {k:'lang', w:0.6, t:'self', q:'我很享受推敲一句话怎么说才最准，改三遍也不烦。'},
+  {k:'lang', w:1.0, t:'beh',  q:'读到好文章时，我会下意识拆它的结构，而不只是记住内容。'},
+
+  /* --- 逻辑推理 --- */
+  {k:'logi', w:1.0, t:'beh',  q:'遇到分歧时，我会先找双方共同承认的前提，再看哪一步推错了。'},
+  {k:'logi', w:1.0, t:'beh',  q:'我会为了好玩去推一些没用的东西——概率、账目、规则漏洞、数列规律。'},
+  {k:'logi', w:0.6, t:'self', q:'看到数据或说法互相矛盾，我会不舒服，直到搞清楚为什么。'},
+  {k:'logi', w:0.8, t:'fb',   q:'别人找我帮忙，常是为了「帮我把这事理清楚」，而不是「听我说说」。'},
+
+  /* --- 空间视觉 --- */
+  {k:'spat', w:1.0, t:'beh',  q:'我能凭记忆画出只走过一次的地方的路线图。'},
+  {k:'spat', w:1.0, t:'beh',  q:'装东西、摆家具时，我会在动手前先在脑子里排好位置。'},
+  {k:'spat', w:0.6, t:'self', q:'我看图比看文字快；图看不懂时，文字也难救我。'},
+  {k:'spat', w:0.8, t:'fb',   q:'有人夸过我「审美好」或「东西摆得好看」。'},
+
+  /* --- 音乐节奏 --- */
+  {k:'music', w:1.0, t:'beh', q:'听到一段旋律，我能很快哼出它的下一句。'},
+  {k:'music', w:1.0, t:'beh', q:'我会不自觉跟着环境里的节奏走——走路、打字、说话的停顿。'},
+  {k:'music', w:0.6, t:'self',q:'声音的质感（音色、语速、背景噪音）会明显改变我的状态。'},
+  {k:'music', w:0.8, t:'fb',  q:'有人说过我唱歌、配音或剪音频「有感觉」。'},
+
+  /* --- 身体动觉 --- */
+  {k:'body', w:1.0, t:'beh',  q:'学新动作（运动、舞蹈、工具操作）时，我看一遍就能模仿个大概。'},
+  {k:'body', w:1.0, t:'beh',  q:'我更适合「边做边想」；光坐着想会卡住。'},
+  {k:'body', w:0.6, t:'self', q:'手上的活（做饭、修东西、手工、乐器）让我放松，而不是让我烦躁。'},
+  {k:'body', w:0.8, t:'fb',   q:'别人说过我「手稳」「动手能力强」。'},
+
+  /* --- 人际洞察 --- */
+  {k:'inter', w:1.0, t:'beh', q:'进一个房间，我几秒内就能感觉到气氛对不对。'},
+  {k:'inter', w:1.0, t:'beh', q:'我能提前猜到某人对某件事会有什么反应，而且常常猜对。'},
+  {k:'inter', w:0.6, t:'self',q:'和不同的人相处时，我能比较快调整自己的方式，让对方觉得好沟通。'},
+  {k:'inter', w:0.8, t:'fb',  q:'有人愿意跟我说他自己都还没想清楚的事。'},
+
+  /* --- 内省自省 --- */
+  {k:'intra', w:1.0, t:'beh', q:'我会定期回看自己做过的决定，找出当时判断错在哪。'},
+  {k:'intra', w:1.0, t:'beh', q:'我能说出自己此刻的情绪是什么、从哪来，而不只是「烦」。'},
+  {k:'intra', w:0.6, t:'self',q:'独处对我来说是充电，不是惩罚。'},
+  {k:'intra', w:0.8, t:'fb',  q:'有人说我「想得比别人深」，或者「太爱想」。'},
+
+  /* --- 细节观察 --- */
+  {k:'nature', w:1.0, t:'beh', q:'我会注意到别人略过的细节差异——颜色、纹理、天气、人状态的变化。'},
+  {k:'nature', w:1.0, t:'beh', q:'我能把一堆杂乱的东西快速分类，并说清分类依据。'},
+  {k:'nature', w:0.6, t:'self',q:'我对「活的东西」（动植物、人、系统）比「造的东西」更有兴趣。'},
+  {k:'nature', w:0.8, t:'fb',  q:'有人说我「观察力强」或「眼睛毒」。'},
+
+  /* --- 学习迁移 --- */
+  {k:'learn', w:1.0, t:'beh',  q:'学一样新东西时，我会先找它的底层结构，而不是从第一步照着做。'},
+  {k:'learn', w:1.0, t:'beh',  q:'我在 A 领域学到的方法，成功搬到过 B 领域用过。'},
+  {k:'learn', w:0.6, t:'self', q:'不懂的东西让我兴奋，而不是让我想躲。'},
+  {k:'learn', w:0.8, t:'fb',   q:'别人说我「上手快」。'},
+
+  /* --- 创造突破 --- */
+  {k:'create', w:1.0, t:'beh', q:'我经常冒出和现有做法不一样的方案，并且真的去试过其中一个。'},
+  {k:'create', w:1.0, t:'beh', q:'过去一年，我做出过至少一个「原来没有的东西」——作品、流程、工具、玩法。'},
+  {k:'create', w:0.6, t:'self',q:'重复别人已经做好的事，会让我很快失去兴趣。'},
+  {k:'create', w:0.8, t:'fb',  q:'有人说我「想法多」或「脑洞大」。'}
+];
+
+/* 每题按维度交错排列，避免连续 4 题问同一件事造成答题惯性 */
+function interleave(list){
+  const buckets = {};
+  list.forEach(q => { (buckets[q.k] = buckets[q.k] || []).push(q); });
+  const keys = Object.keys(buckets);
+  const out = [];
+  let added = true;
+  let round = 0;
+  while(added){
+    added = false;
+    keys.forEach(k => {
+      if(buckets[k][round] !== undefined){ out.push(buckets[k][round]); added = true; }
+    });
+    round++;
+  }
+  return out;
+}
+const QS = interleave(QUESTIONS);
+
+/* 选项文案 */
+const SCALE = [
+  {v:1, t:'完全不符合', s:'过去一年基本没发生过'},
+  {v:2, t:'偏不符合',   s:'偶尔，但不算特征'},
+  {v:3, t:'一半一半',   s:'说不清'},
+  {v:4, t:'偏符合',     s:'有过几次，挺明显'},
+  {v:5, t:'完全符合',   s:'这基本就是我'}
+];
+
+const TYPE_LABEL = {beh:'行为题', fb:'反馈题', self:'自评题'};
+const TYPE_CLASS = {beh:'beh', fb:'fb', self:'self'};
+
+/* =========================================================
+   3. 组合命名（两维交叉才是稀缺组合）
+   ========================================================= */
+const PAIRS = {
+  'lang|logi':   ['论说者', '能把复杂论证讲成人话，并且经得起追问'],
+  'lang|inter':  ['连接者', '用语言把人聚起来，让彼此愿意合作'],
+  'lang|intra':  ['书写者', '先向内挖到底，再向外写出来'],
+  'lang|create': ['造词者', '能发明新的说法、新的框架，让别人用你的词思考'],
+  'lang|spat':   ['转译者', '在文字与图像之间来回翻译'],
+  'lang|body':   ['表演者', '语言和身体一起到场，感染力翻倍'],
+  'lang|learn':  ['拆书者', '读得快、拆得开、讲得出'],
+  'lang|music':  ['吟游者', '对文字的节奏和声音质感敏感，能把内容讲出韵律'],
+  'lang|nature':['记录者', '观察细、写得准，擅长把容易被忽略的细节说清楚'],
+  'logi|create': ['体系建造者', '能从零搭出一套真能跑起来的规则'],
+  'logi|learn':  ['拆解者', '什么都能拆到骨架，然后换个壳复用'],
+  'logi|spat':   ['工程师型', '把结构画出来，再照着图造'],
+  'logi|intra':  ['自审者', '给自己做归因审计，误差越来越小'],
+  'logi|nature': ['质检型', '看得细又能追到原因'],
+  'logi|inter':  ['调解者', '能把冲突拆成事实与诉求，推动各方达成共识'],
+  'logi|body':   ['实操师', '先想清步骤再动手，做事讲流程也讲效率'],
+  'logi|music':  ['编曲脑', '对结构和模式敏感，擅长把零散元素组织成秩序'],
+  'spat|inter':  ['场景师', '能读懂空间里的氛围与关系，擅长营造让人舒服的场'],
+  'spat|intra':  ['意象者', '习惯在脑内构建画面来理解自己和世界'],
+  'spat|nature': ['寻迹者', '对形态、纹理和环境变化敏感，善于从细节里发现规律'],
+  'spat|learn':  ['图解者', '学新东西喜欢先画图建模，用可视化方式快速理解'],
+  'spat|music':  ['视听师', '对画面与声音的配合敏感，擅长做有氛围感的表达'],
+  'music|inter': ['共鸣者', '能用节奏与情绪感染他人，擅长带动现场气氛'],
+  'music|intra': ['调频者', '用声音或节奏调节自己的状态，也能听见内心的起伏'],
+  'music|nature':['拾音者', '对环境里的声音与细微变化敏感，善于捕捉氛围'],
+  'inter|intra': ['洞察者', '同时看得懂别人和自己，很少自欺'],
+  'inter|create':['组织者', '把一个人的想法，变成一群人能做的事'],
+  'inter|learn': ['教练型', '自己学得快，还能把路子传给别人'],
+  'inter|body':  ['带动者', '现场就能把人带起来'],
+  'inter|nature':['察觉者', '对人和环境的细微变化都很敏感，善于提前发现苗头'],
+  'intra|create':['独行者', '一个人也能产出完整作品'],
+  'intra|nature':['观照者', '看得细，也沉得住'],
+  'intra|learn': ['反思者', '擅长从经历里提炼规律，把学到的东西内化成自己的方法'],
+  'body|spat':   ['手艺人', '手和眼一起工作，成品说话'],
+  'body|music':  ['节奏体', '用身体表达，不必翻译成语言'],
+  'body|inter':  ['协作者', '在实干中和人配合默契，擅长把团队节奏带起来'],
+  'body|intra':  ['修行者', '通过身体实践来认识自己，动手与内省并行'],
+  'body|nature': ['匠野型', '喜欢和真实材料、环境打交道，在动手中观察与调整'],
+  'body|learn':  ['练习者', '靠反复上手快速掌握技能，学中做、做中学'],
+  'body|create': ['造物者', '把想法落成实物，擅长从做的过程中迭代作品'],
+  'learn|create':['迭代者', '学得快又敢改，反复逼近对的东西'],
+  'nature|learn':['博物者', '对细节保持好奇，乐于持续积累并把观察变成知识'],
+  'spat|create': ['造型者', '把想象做成看得见、摸得着的东西'],
+  'nature|create':['采集者', '到处捡素材，最后攒出一个新东西'],
+  'music|create':['声场师', '用声音造气氛'],
+  'music|learn': ['听感型', '靠耳朵学东西']
+};
+function pairName(a, b){
+  const hit = PAIRS[a+'|'+b] || PAIRS[b+'|'+a];
+  if(hit) return hit;
+  const A = DIMS.find(d => d.k === a).a;
+  const B = DIMS.find(d => d.k === b).a;
+  return [A + '×' + B, '这是一个不太常见的组合，值得你自己给它起个名字'];
+}
+
+/* =========================================================
+   4. 每维的方向与验证实验
+   ========================================================= */
+const ADVICE = {
+  lang: {
+    dir: ['内容创作/写作','品牌文案','播客与口播','讲师/培训','产品文档','公关','法务文书'],
+    lab: '30 天内公开发布 4 篇 ≥1500 字的东西，同一个主题。看第 4 篇的完成速度和被读完率是否明显高于第 1 篇。',
+    trap: '说得比做得好——用交付物说话，不要用表达力'
+  },
+  logi: {
+    dir: ['数据分析','算法/后端','策略咨询','审计','投研','风控','产品逻辑设计','评测设计'],
+    lab: '找一件身边「大家都说有问题但说不清」的事，写一份 2 页的因果链分析，交给 3 个人看他们是否被说服。',
+    trap: '分析瘫痪——给每次分析设一个「必须做决定的截止时间」'
+  },
+  spat: {
+    dir: ['UI/工业/建筑设计','数据可视化','摄影与影视','GIS/地图','装帧排版','游戏关卡','信息图'],
+    lab: '把一个你熟悉的抽象概念画成一张不用解释就能看懂的图，让 5 个人在不提示的情况下复述它的意思。',
+    trap: '完美主义返工——先出 3 个草稿再选，不要在一个稿上磨'
+  },
+  music: {
+    dir: ['音乐制作','声音设计','配音/播客剪辑','短视频配乐','演出','声音品牌'],
+    lab: '为一周里你做过的 5 件事各配 15 秒声音，看哪一条别人一听就知道是什么场景。',
+    trap: '感受强、输出少——先要求「每周交一个成品」，再谈水平'
+  },
+  body: {
+    dir: ['运动教练/康复','表演与舞蹈','手工与木工','设备与机械','厨艺','外科与手艺型职业','原型打样'],
+    lab: '选一个你从没做过的手工活，限时 3 小时做出能用的成品。记录你在第几分钟进入「忘记时间」的状态。',
+    trap: '靠体力硬扛——把重复动作固化成流程或工具'
+  },
+  inter: {
+    dir: ['销售/BD','HR/招聘','心理咨询','社群运营','客户成功','教学','谈判','用户研究'],
+    lab: '找 5 个人各聊 30 分钟，事后写下他们「没说出口但真正在意」的那件事，一周后验证你猜对几个。',
+    trap: '情绪劳动过载——把共情当成技术使用，用完要主动断联'
+  },
+  intra: {
+    dir: ['研究','深度写作','战略','教练/咨询','产品决策','独立创作','复盘体系设计'],
+    lab: '连续 14 天每晚写 200 字：今天哪个决定是对的、为什么。14 天后看有没有出现重复犯错的主题。',
+    trap: '想太多不动——规定「想满 30 分钟必须输出一个动作」'
+  },
+  nature: {
+    dir: ['生物/环境','医学诊断','质检/品控','标注规则设计','农业','博物/科普','安全审计'],
+    lab: '选一个你天天见的场景（通勤路线/常去的店），连续 7 天每天记 3 个别人不会注意到的变化。',
+    trap: '观察多、结论少——每次观察必须落一条可检验的推断'
+  },
+  learn: {
+    dir: ['技术预研','解决方案架构','跨领域整合','快速转岗型岗位','开源维护','产品经理','咨询顾问'],
+    lab: '选一个完全陌生的领域，用 7 天做出一个能跑的最小成果，然后写清你「搬用了哪个旧领域的方法」。',
+    trap: '样样浅尝——选一个方向强制做满 90 天再评估'
+  },
+  create: {
+    dir: ['0→1 产品','创意策划','创业','内容原创','设计','研发','增长实验'],
+    lab: '30 天做 4 个「最小可交付」的东西（一个工具、一篇文、一个流程、一个小产品），全部发出去。',
+    trap: '开头多收尾少——每个想法强制设「砍掉条件」，到点就砍'
+  }
+};
+
+/* =========================================================
+   5. 状态
+   ========================================================= */
+const DEMO_LIMIT = 5;
+const isDemo = new URLSearchParams(location.search).get('demo') === '1';
+const LS_KEY = 'talent-radar-v1';
+let answers = new Array(QS.length).fill(0);  // 0 = 未答，1..5
+let cursor = 0;
+let lastResult = null;
+
+function save(){
+  if(isDemo) return; // 试玩不落盘，避免污染正式进度
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify({answers, cursor}));
+  }catch(e){ /* 隐私模式忽略 */ }
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return null;
+    const o = JSON.parse(raw);
+    if(!Array.isArray(o.answers) || o.answers.length !== QS.length) return null;
+    return o;
+  }catch(e){ return null; }
+}
+function clearSaved(){
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+}
+
+/* =========================================================
+   6. 打分
+   ========================================================= */
+function score(){
+  const acc = {};   // 每维：加权和 / 权重和
+  DIMS.forEach(d => acc[d.k] = {ws:0, ww:0, beh:[], self:[], all:[]});
+
+  QS.forEach((q, i) => {
+    const v = answers[i];
+    if(!v) return;
+    const norm = (v - 1) / 4;          // 0..1
+    const a = acc[q.k];
+    a.ws += norm * q.w;
+    a.ww += q.w;
+    a.all.push(norm);
+    if(q.t === 'beh')  a.beh.push(norm);
+    if(q.t === 'self') a.self.push(norm);
+  });
+
+  const per = {};
+  let behAll = [], selfAll = [];
+  DIMS.forEach(d => {
+    const a = acc[d.k];
+    const s = a.ww > 0 ? a.ws / a.ww : 0;
+    const mean = arr => arr.length ? arr.reduce((x,y)=>x+y,0)/arr.length : 0;
+    const std = arr => {
+      if(arr.length < 2) return 0;
+      const m = mean(arr);
+      return Math.sqrt(arr.reduce((s2,x)=>s2+(x-m)*(x-m),0)/arr.length);
+    };
+    per[d.k] = {
+      score: Math.round(s * 100),
+      behMean: mean(a.beh),
+      selfMean: mean(a.self),
+      vol: std(a.all)
+    };
+    behAll = behAll.concat(a.beh);
+    selfAll = selfAll.concat(a.self);
+  });
+
+  const mean = arr => arr.length ? arr.reduce((x,y)=>x+y,0)/arr.length : 0;
+  const ranked = DIMS.map(d => ({k:d.k, n:d.n, s:per[d.k].score}))
+                      .sort((a,b) => b.s - a.s);
+
+  return {
+    per,
+    ranked,
+    behMean: mean(behAll),
+    selfMean: mean(selfAll)
+  };
+}
+
+/* =========================================================
+   7. 渲染：答题界面
+   ========================================================= */
+const $ = id => document.getElementById(id);
+
+function renderQuestion(){
+  const q = QS[cursor];
+  $('q-idx').textContent = '第 ' + (cursor+1) + ' / ' + QS.length + ' 题';
+  $('q-dim').textContent = DIM_NAME[q.k];
+  $('q-bar').style.width = (cursor / QS.length * 100) + '%';
+
+  const tag = $('q-tag');
+  tag.className = 'tag ' + TYPE_CLASS[q.t];
+  tag.textContent = TYPE_LABEL[q.t] + ' · 权重 ' + q.w.toFixed(1);
+
+  $('q-text').textContent = q.q;
+
+  const box = $('q-opts');
+  box.innerHTML = '';
+  SCALE.forEach(o => {
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.innerHTML = '<b>' + o.v + '</b> ' + o.t + '<small>' + o.s + '</small>';
+    if(answers[cursor] === o.v) b.classList.add('sel');
+    b.onclick = () => {
+      answers[cursor] = o.v;
+      save();
+      if(isDemo && cursor >= DEMO_LIMIT - 1){
+        finishDemo();
+        return;
+      }
+      if(cursor < QS.length - 1){
+        cursor++;
+        renderQuestion();
+      }else{
+        finish();
+      }
+    };
+    box.appendChild(b);
+  });
+
+  $('btn-prev').disabled = cursor === 0;
+}
+
+function nextUnanswered(){
+  const limit = isDemo ? DEMO_LIMIT : QS.length;
+  for(let i=0;i<limit;i++) if(!answers[i]) return i;
+  return Math.max(0, limit - 1);
+}
+
+function finishDemo(){
+  ['panel-intro','panel-quiz','panel-result'].forEach(id => $(id).classList.add('hidden'));
+  const wrap = $('panel-intro');
+  wrap.classList.remove('hidden');
+  wrap.innerHTML = ''
+    + '<div class="card">'
+    + '<h2>试玩已完成前 ' + DEMO_LIMIT + ' 题</h2>'
+    + '<p>你已经体验了题目节奏和“行为证据式”提问方式。完整版本会继续完成剩余题目，并生成可复核的结果。</p>'
+    + '<div class="callout">完整版本解锁：全部 40 题 × 10 维雷达结果、自评 vs 行为差距与一致性提示、排序敏感度提示、分享卡片、AI 深挖与求职定位。</div>'
+    + '<p style="font-size:13px;color:#95a3b8;margin-top:10px">为什么试玩不直接出“半成品结论”：前几题不足以支撑稳定排序，提前出分容易误导。</p>'
+    + '<div class="btnrow" style="margin-top:18px">'
+    + '<a class="btn" href="sell/index.html#buy" target="_top">获取完整版本</a>'
+    + '<button class="btn ghost" id="demo-restart">再试一次前 ' + DEMO_LIMIT + ' 题</button>'
+    + '</div></div>';
+  $('demo-restart').onclick = () => { location.href = location.pathname + '?demo=1'; };
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* =========================================================
+   8. 渲染：雷达图（原生 SVG）
+   ========================================================= */
+function radarSVG(data){
+  const W = 320, C = 160, R = 118;
+  const n = DIMS.length;
+  const pt = (i, r) => {
+    const ang = -Math.PI/2 + i * (2*Math.PI/n);
+    return [C + Math.cos(ang)*r, C + Math.sin(ang)*r];
+  };
+
+  let g = '';
+  /* 网格环 */
+  [0.25, 0.5, 0.75, 1].forEach(f => {
+    const pts = [];
+    for(let i=0;i<n;i++){ const [x,y] = pt(i, R*f); pts.push(x.toFixed(1)+','+y.toFixed(1)); }
+    g += '<polygon points="'+pts.join(' ')+'" fill="none" stroke="#1e2836" stroke-width="1"/>';
+  });
+  /* 轴线 */
+  for(let i=0;i<n;i++){
+    const [x,y] = pt(i, R);
+    g += '<line x1="'+C+'" y1="'+C+'" x2="'+x.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="#1e2836" stroke-width="1"/>';
+  }
+  /* 数据多边形 */
+  const dp = [];
+  for(let i=0;i<n;i++){
+    const d = DIMS[i];
+    const v = (data.per[d.k].score / 100);
+    const [x,y] = pt(i, R * Math.max(v, 0.02));
+    dp.push(x.toFixed(1)+','+y.toFixed(1));
+  }
+  g += '<polygon points="'+dp.join(' ')+'" fill="rgba(94,234,212,0.18)" stroke="#5eead4" stroke-width="2" stroke-linejoin="round"/>';
+  /* 数据点 */
+  for(let i=0;i<n;i++){
+    const d = DIMS[i];
+    const v = data.per[d.k].score / 100;
+    const [x,y] = pt(i, R * Math.max(v, 0.02));
+    g += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3.2" fill="#5eead4"/>';
+  }
+  /* 标签 */
+  for(let i=0;i<n;i++){
+    const d = DIMS[i];
+    const [x,y] = pt(i, R + 20);
+    const ang = -Math.PI/2 + i * (2*Math.PI/n);
+    let anchor = 'middle';
+    if(Math.cos(ang) > 0.25) anchor = 'start';
+    if(Math.cos(ang) < -0.25) anchor = 'end';
+    const val = data.per[d.k].score;
+    g += '<text x="'+x.toFixed(1)+'" y="'+(y+4).toFixed(1)+'" fill="#95a3b8" font-size="11.5" text-anchor="'+anchor+'">'
+       + d.n + ' <tspan fill="#5eead4">'+val+'</tspan></text>';
+  }
+
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+W+'" width="320" height="320">'
+       + '<rect width="'+W+'" height="'+W+'" fill="#141a26"/>' + g + '</svg>';
+}
+
+/* =========================================================
+   9. 渲染：结果
+   ========================================================= */
+function finish(){
+  const data = score();
+  lastResult = data;
+
+  const top = data.ranked.slice(0, 3);
+  const [nm, desc] = pairName(top[0].k, top[1].k);
+
+  /* 组合名 */
+  $('nameline').innerHTML =
+    '<div class="name-big">' + nm + '</div>' +
+    '<p style="margin:0 0 10px">' + desc + '</p>';
+
+  /* top3 chip */
+  $('top3').innerHTML = top.map((t,i) =>
+    '<span class="chip' + (i ? ' sec' : '') + '">' + t.n + ' ' + t.s + '</span>'
+  ).join('');
+
+  /* 条形 */
+  $('bars').innerHTML = data.ranked.map(t => {
+    return '<div class="barline">' +
+      '<span class="nm">' + t.n + '</span>' +
+      '<span class="tk"><i style="width:' + t.s + '%"></i></span>' +
+      '<span class="vl">' + t.s + '</span></div>';
+  }).join('');
+
+  /* 自评 vs 行为差距提示 + 一致性(vol) + 敏感度 */
+  const gaps = DIMS.map(d => ({
+    n: d.n,
+    gap: data.per[d.k].behMean - data.per[d.k].selfMean
+  })).sort((a,b) => Math.abs(b.gap) - Math.abs(a.gap));
+
+  const topGap = gaps[0];
+  let note = '';
+  if(Math.abs(topGap.gap) > 0.28){
+    if(topGap.gap > 0){
+      note = '注意「' + topGap.n + '」：你实际做出来的（行为分）明显高于你对自己的评价（自评分）。'
+           + '这通常意味着你一直在用这维能力，但没把它算成天赋——被低估的那块。';
+    }else{
+      note = '注意「' + topGap.n + '」：你对自己的评价明显高于实际行为记录。'
+           + '这不一定是你不行，而可能是你欣赏这类能力，但还没真的把它做出来。建议用一次可交付的成品来验证。';
+    }
+  }
+
+  const highVol = DIMS.filter(d => data.per[d.k].vol >= 0.38).map(d => d.n);
+  if(highVol.length){
+    note += (note ? '<br><br>' : '')
+      + '一致性提示：' + highVol.join('、') + ' 维度内题目回答波动较大（同一维度里既有很高也有很低）。'
+      + '这通常意味着该维度下的情境差异明显，或你在作答时有犹豫——建议用 ④ AI 深挖把这几维换成具体事件来验证。';
+  }
+
+  const diff12 = top[0].s - top[1].s;
+  const diff23 = top[1].s - top[2].s;
+  if(diff12 <= 8 || diff23 <= 8){
+    note += (note ? '<br><br>' : '')
+      + '精度提示：单题挪一格会让某维度分数变化约 4~7 分，当前前几名差距 ≤8，排序可能因作答噪声而翻转。'
+      + '建议把前几名视为并列候选，用 30 天验证实验而不是分数先后决定方向。';
+  }
+
+  if(note){
+    $('gapnote').innerHTML = '<div class="callout">' + note + '</div>';
+  }else{
+    $('gapnote').innerHTML = '';
+  }
+
+  /* 建议：top1 与 top2 各一条 */
+  let adv = '';
+  [top[0], top[1]].forEach((t, i) => {
+    const a = ADVICE[t.k];
+    if(!a) return;
+    adv += '<h3>' + (i === 0 ? '主天赋' : '副天赋') + '：' + t.n + '（' + t.s + '）</h3>';
+    adv += '<p><b style="color:#e8edf5">30 天验证实验：</b>' + a.lab + '</p>';
+    adv += '<p><b style="color:#e8edf5">要防的陷阱：</b>' + a.trap + '</p>';
+  });
+
+  /* 篮子检验：柱子是否都差不多高 */
+  const scores = data.ranked.map(t => t.s);
+  const spread = scores[0] - scores[scores.length-1];
+  if(spread < 18){
+    adv += '<div class="callout">各维度差距很小（最高 ' + scores[0] + '，最低 ' + scores[scores.length-1]
+        + '）。两种可能：① 你确实比较均衡；② 你答题时手太犹豫，全都选了「一半一半」。'
+        + '如果每题都纠结，说明这道题对你的区分度不够——去用 ② 里的 AI 追问版，它不要你打分，只要你讲事。</div>';
+  }
+  $('advice').innerHTML = adv;
+
+  /* 方向 */
+  const dirs = new Set();
+  [top[0], top[1], top[2]].forEach(t => {
+    (ADVICE[t.k] ? ADVICE[t.k].dir : []).forEach(d => dirs.add(d));
+  });
+  $('directions').innerHTML = Array.from(dirs).slice(0, 12)
+    .map(d => '<span>' + d + '</span>').join('');
+
+  /* 切换到结果页 */
+  ['panel-intro','panel-quiz','panel-result'].forEach(id => $(id).classList.add('hidden'));
+  $('panel-result').classList.remove('hidden');
+  $('radar').innerHTML = radarSVG(data);
+  window.scrollTo({top:0, behavior:'smooth'});
+  save();
+}
+
+/* =========================================================
+   10. 文字报告 / 导出
+   ========================================================= */
+function buildReport(){
+  const d = lastResult;
+  if(!d) return '';
+  const top = d.ranked.slice(0,3);
+  const [nm, desc] = pairName(top[0].k, top[1].k);
+  const L = [];
+  L.push('【天赋雷达报告】');
+  L.push('组合：' + nm + ' —— ' + desc);
+  L.push('');
+  L.push('一、十维得分');
+  d.ranked.forEach((t,i) => L.push((i+1) + '. ' + t.n + '  ' + t.s));
+  L.push('');
+  L.push('二、前三');
+  top.forEach((t,i) => L.push((i+1) + '. ' + t.n + '（' + t.s + '）'));
+  L.push('');
+  L.push('三、验证实验');
+  [top[0], top[1]].forEach((t,i) => {
+    const a = ADVICE[t.k];
+    if(!a) return;
+    L.push('· ' + t.n + '：' + a.lab);
+    L.push('  陷阱：' + a.trap);
+  });
+  L.push('');
+  L.push('四、可能方向');
+  const dirs = new Set();
+  top.forEach(t => (ADVICE[t.k] ? ADVICE[t.k].dir : []).forEach(x => dirs.add(x)));
+  L.push(Array.from(dirs).slice(0,12).join(' / '));
+  L.push('');
+  L.push('行为分均值 ' + Math.round(d.behMean*100) + '，自评分均值 ' + Math.round(d.selfMean*100)
+       + '（两者差距大说明自我认知与实际行为不一致）');
+  return L.join('\n');
+}
+
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  setTimeout(() => t.classList.remove('on'), 1600);
+}
+
+function copyText(text, label){
+  const done = () => toast((label || '已复制') + ' ✓');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  }else{
+    fallbackCopy(text, done);
+  }
+}
+function fallbackCopy(text, done){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand('copy'); done(); }catch(e){ toast('复制失败，请手动选择'); }
+  document.body.removeChild(ta);
+}
+
+function download(filename, content, mime){
+  const blob = new Blob([content], {type: mime || 'application/octet-stream'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+
+/* 雷达图转 PNG */
+function radarPNG(){
+  const svg = radarSVG(lastResult);
+  const blob = new Blob([svg], {type:'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  img.onload = () => {
+    const scale = 2;
+    const cv = document.createElement('canvas');
+    cv.width = 320 * scale;
+    cv.height = 320 * scale;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#141a26';
+    ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.drawImage(img, 0, 0, cv.width, cv.height);
+    URL.revokeObjectURL(url);
+    cv.toBlob(b => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(b);
+      a.download = 'talent-radar.png';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+      toast('已下载 PNG ✓');
+    });
+  };
+  img.onerror = () => { toast('导出失败，可截图代替'); URL.revokeObjectURL(url); };
+  img.src = url;
+}
+
+/* =========================================================
+   10b. 分享卡片（Canvas 直绘 1080×1440）
+   ========================================================= */
+function roundRectPath(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawShareCanvas(){
+  const d = lastResult;
+  const W = 1080, H = 1440;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  const FONT = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
+
+  /* 背景：深色渐变 + 两团氛围光 */
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, '#0b0f17');
+  bg.addColorStop(1, '#101827');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  let glow = ctx.createRadialGradient(180, 120, 0, 180, 120, 520);
+  glow.addColorStop(0, 'rgba(23,48,74,0.55)');
+  glow.addColorStop(1, 'rgba(23,48,74,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, 700);
+
+  glow = ctx.createRadialGradient(950, 300, 0, 950, 300, 480);
+  glow.addColorStop(0, 'rgba(42,31,74,0.5)');
+  glow.addColorStop(1, 'rgba(42,31,74,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(400, 0, W, H);
+
+  /* 顶部标题 + 日期 */
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#5eead4';
+  ctx.font = '700 34px ' + FONT;
+  ctx.fillText('天赋雷达', 72, 92);
+  ctx.fillStyle = '#64748b';
+  ctx.font = '24px ' + FONT;
+  const t = new Date();
+  ctx.fillText(
+    t.getFullYear() + '.' + String(t.getMonth() + 1).padStart(2, '0') + '.'
+    + String(t.getDate()).padStart(2, '0') + ' 测评',
+    72, 128
+  );
+
+  /* 雷达图 */
+  const CX = W / 2, CY = 560, R = 300;
+  const n = DIMS.length;
+  const pt = (i, r) => {
+    const ang = -Math.PI / 2 + i * (2 * Math.PI / n);
+    return [CX + Math.cos(ang) * r, CY + Math.sin(ang) * r];
+  };
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1.5;
+  [0.25, 0.5, 0.75, 1].forEach(f => {
+    ctx.beginPath();
+    for(let i = 0; i < n; i++){
+      const [x, y] = pt(i, R * f);
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+  });
+  for(let i = 0; i < n; i++){
+    const [x, y] = pt(i, R);
+    ctx.beginPath();
+    ctx.moveTo(CX, CY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  }
+
+  ctx.beginPath();
+  for(let i = 0; i < n; i++){
+    const v = d.per[DIMS[i].k].score / 100;
+    const [x, y] = pt(i, R * Math.max(v, 0.02));
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(94,234,212,0.18)';
+  ctx.fill();
+  ctx.strokeStyle = '#5eead4';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  for(let i = 0; i < n; i++){
+    const v = d.per[DIMS[i].k].score / 100;
+    const [x, y] = pt(i, R * Math.max(v, 0.02));
+    ctx.beginPath();
+    ctx.arc(x, y, 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#5eead4';
+    ctx.fill();
+  }
+
+  /* 维度标签（名称 + 数值） */
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for(let i = 0; i < n; i++){
+    const dim = DIMS[i];
+    const [x, y] = pt(i, R + 46);
+    const val = d.per[dim.k].score;
+    ctx.font = '26px ' + FONT;
+    ctx.fillStyle = '#95a3b8';
+    ctx.fillText(dim.n, x, y - 14);
+    ctx.font = '700 28px ' + FONT;
+    ctx.fillStyle = '#5eead4';
+    ctx.fillText(String(val), x, y + 18);
+  }
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  /* 组合名 + 一句描述 */
+  const top = d.ranked.slice(0, 3);
+  const pair = pairName(top[0].k, top[1].k);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#e8edf5';
+  ctx.font = '700 58px ' + FONT;
+  ctx.fillText(pair[0], W / 2, 985);
+  ctx.fillStyle = '#95a3b8';
+  ctx.font = '27px ' + FONT;
+  ctx.fillText(pair[1], W / 2, 1036);
+
+  /* top3 胶囊 */
+  const chips = top.map(x => x.n + ' ' + x.s);
+  ctx.font = '26px ' + FONT;
+  const widths = chips.map(c => ctx.measureText(c).width + 56);
+  const totalW = widths.reduce((a, b) => a + b, 0) + 20 * (chips.length - 1);
+  let x0 = W / 2 - totalW / 2;
+  chips.forEach((c, i) => {
+    roundRectPath(ctx, x0, 1075, widths[i], 58, 29);
+    ctx.fillStyle = i === 0 ? 'rgba(94,234,212,0.14)' : 'rgba(124,156,255,0.10)';
+    ctx.fill();
+    ctx.strokeStyle = i === 0 ? 'rgba(94,234,212,0.55)' : 'rgba(124,156,255,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = i === 0 ? '#5eead4' : '#9db4ff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(c, x0 + widths[i] / 2, 1105);
+    x0 += widths[i] + 20;
+  });
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  /* 金句 + 水印 */
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#3f4c61';
+  ctx.font = '24px ' + FONT;
+  ctx.fillText('天赋 = 自发做 × 上手快 × 有正反馈', W / 2, 1215);
+  ctx.fillStyle = '#334155';
+  ctx.font = '22px ' + FONT;
+  ctx.fillText('天赋雷达 · 本地生成 · 40 题 × 10 维', W / 2, 1395);
+
+  return cv;
+}
+
+function sharePNG(){
+  if(!lastResult){ toast('请先完成测评'); return; }
+  const cv = drawShareCanvas();
+  cv.toBlob(b => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = 'talent-share.png';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    toast('分享卡片已下载 ✓');
+  });
+}
+
+/* =========================================================
+   11. Prompt 文本
+   ========================================================= */
+const PROMPT_A = `你现在是我的天赋挖掘教练。你的任务不是给我做性格测试，而是通过追问，找出我过去真实重复发生过的行为模式，并据此给出证据支撑的天赋判断。
+
+【最重要的规则】
+1. 一次只问一个问题。等我回答完，再问下一个。
+2. 每一层追问必须把答案往"可验证的具体事件"上压：
+   - 第 1 层：请给一个具体例子（什么时候、什么事）
+   - 第 2 层：当时你具体做了什么动作？别人做了什么反应？
+   - 第 3 层：这件事在过去一年发生过几次？有没有人主动找你做这件事？
+3. 如果我的回答是"我觉得/我一般/我比较"，你必须打回：请换成一个真实发生过的事件。
+4. 不要夸我，不要给建议，不要总结。只问，直到我说"够了"。
+5. 全程不要一次抛出多个问题，也不要用问卷形式。
+
+【要覆盖的 10 个维度】每个维度问 2~3 轮，问完标记该维度"证据强度"（强/中/弱/无）：
+1. 语言表达：能不能把复杂的事讲清楚
+2. 逻辑推理：能不能拆到前提层再重建
+3. 空间视觉：能不能在脑内先建模型
+4. 音乐节奏：对声音、韵律、节奏的敏感度
+5. 身体动觉：靠手和身体学习的能力
+6. 人际洞察：能不能读出别人没说出口的部分
+7. 内省自省：能不能给自己做归因
+8. 细节观察：能不能注意到别人略过的差异
+9. 学习迁移：能不能把 A 领域的方法搬到 B 领域
+10. 创造突破：会不会真的去试没做过的事
+
+【判定标准】一个维度要被判为"天赋"，必须三件事同时成立：
+- 自发：没人要求你也会做（不消耗意志力）
+- 优势：同样投入，你的产出明显高于平均
+- 正反馈：你自己或别人事后给了明确好评
+只有两件成立的，标为"偏好"；只有一件的，标为"兴趣"。
+
+【开场】先说一句"我们开始，我只问一个问题"，然后问第 1 题：
+过去一年，你做过哪件事，是没人要求、你自己主动开始做，并且做着做着忘记时间的？
+
+【结束时的输出格式】当我说"够了"，输出：
+一、证据表（每个维度一行：维度 | 证据（你复述的事件） | 强度 强/中/弱/无 | 判定 天赋/偏好/兴趣）
+二、核心天赋 3 项，每项必须引用我原话里的具体事件作为依据，不许出现"你可能/你似乎"
+三、反向证据：每一项天赋，给我一个"最可能不成立"的反例情境，说明在什么条件下它就不成立
+四、雷达数据：10 个维度各给 0-100 分（只按证据强度打分，没证据的给 0，不许凑分）
+五、下一步：针对最重要的 1 项，给一个 30 天内可完成、有交付物、能被别人检验的验证实验`;
+
+const PROMPT_B = `你现在是我的反证官。任务是拆掉我下面这份天赋结论，不是夸它。
+
+下面是我（或者另一个 AI）得出的天赋判断：
+
+"""
+（把你的天赋结论 / 你的天赋雷达报告粘贴在这里）
+"""
+
+请按以下顺序做，每一条都要给具体理由，不要泛泛而谈：
+
+1. 归因错误检查：这些"天赋"里，有哪些其实是环境产物（所在行业、岗位要求、身边人的期待、某次被迫的经历），而不是我自己的特质？逐条点名。
+2. 幸存者偏差检查：我举的证据是不是只挑了成功案例？如果我当年的尝试失败了，我会不会得出完全相反的结论？
+3. 可替代性检查：如果 AI 或一个普通人在 3 个月内能把这件做到和我一样好，它还算天赋吗？逐条判断。
+4. 沉没成本检查：我坚持这件事，是因为擅长，还是因为已经投入太多不甘心？
+5. 反例构造：为每一项天赋，构造一个"我在这个情境下表现得比普通人差"的具体场景。如果构造不出来，说明这条判断可能太模糊，请指出它需要被改写得更具体。
+6. 结论：从这份结论里，你认为最站得住的是哪 1 项？最可能是自我美化的是哪 1 项？如果只能保留 1 项去投入未来 3 年，你建议保留哪一项，为什么？
+
+最后不要给鼓励性结尾。`;
+
+const PROMPT_C = `你现在是我的执行教练。下面是我的天赋雷达结论，请把它变成未来 30 天的具体动作。
+
+我的结论：
+"""
+（粘贴天赋结论 / 雷达报告）
+"""
+
+约束：
+- 我每周能投入的额外时间是 8 小时（如果我说过别的，以我说的为准）
+- 我要的是"能被别人看见的交付物"，不是"学习计划"
+- 不许给我读书清单、课程清单
+
+请输出：
+
+1. 一句话定位：把我最强的两维交叉，写成一句可以直接用在简历/自我介绍/社媒简介里的话（不超过 40 字）。
+2. 30 天路线：拆成 4 周，每周一个"必须交出去"的成品，写明：做什么、交给谁看、通过/不通过的标准是什么。
+3. 排除清单：这 30 天我明确不做什么（至少 3 条），以及为什么现在做它们是浪费。
+4. 反向指标：如果 30 天后我应该放弃这个方向，最可能出现的前兆是什么？（要具体到可观察的行为，不要"感觉不对"）
+5. 一句话复盘模板：30 天后我用哪 3 个问题判断该不该继续投入。
+
+请直接开始，不要问我问题。`;
+
+/* =========================================================
+   12. 事件绑定
+   ========================================================= */
+/* 标签页 */
+document.querySelectorAll('.tabs button').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    ['test','ai','method'].forEach(t => {
+      $('tab-'+t).classList.toggle('hidden', t !== b.dataset.tab);
+    });
+    window.scrollTo({top:0, behavior:'smooth'});
+  };
+});
+
+/* 开始 */
+$('btn-start').onclick = () => {
+  cursor = 0;
+  answers = new Array(QS.length).fill(0);
+  save();
+  $('panel-intro').classList.add('hidden');
+  $('panel-quiz').classList.remove('hidden');
+  renderQuestion();
+};
+
+/* 继续 */
+$('btn-resume').onclick = () => {
+  cursor = nextUnanswered();
+  $('panel-intro').classList.add('hidden');
+  $('panel-quiz').classList.remove('hidden');
+  renderQuestion();
+};
+
+/* 上一题 */
+$('btn-prev').onclick = () => {
+  if(cursor > 0){ cursor--; save(); renderQuestion(); }
+};
+
+/* 重新开始 */
+$('btn-reset').onclick = () => {
+  if(!confirm('清空当前所有答案，从头开始？')) return;
+  clearSaved();
+  answers = new Array(QS.length).fill(0);
+  cursor = 0;
+  $('panel-quiz').classList.add('hidden');
+  $('panel-result').classList.add('hidden');
+  $('panel-intro').classList.remove('hidden');
+  $('btn-resume').classList.add('hidden');
+};
+
+/* 匿名贡献（默认关闭；demo 模式完全隐藏） */
+const CONTRIB_KEY = 'talent-radar-contrib-v1';
+function windowContribution(){
+  if(!lastResult) return null;
+  const dims = {};
+  DIMS.forEach(d => { dims[d.k] = {score:lastResult.per[d.k].score, behMean:lastResult.per[d.k].behMean,
+    selfMean:lastResult.per[d.k].selfMean, vol:lastResult.per[d.k].vol}; });
+  const ranked = lastResult.ranked.map(d => d.k);
+  return {
+    schema_version:1,
+    contributor_hash:'h' + (localStorage.getItem('talent-radar-hash') || Math.random().toString(16).slice(2) + Date.now().toString(16)),
+    created_at:new Date().toISOString(),
+    answers: QS.map((q,i) => ({qid:'q'+i, value:answers[i], weight:q.w, dtype:q.t, ms_spent:0})),
+    scores:{dims, ranked, top2gap:lastResult.ranked.length>1 ? lastResult.per[lastResult.ranked[0].k].score - lastResult.per[lastResult.ranked[1].k].score : 0},
+    meta:{age_band:'undisclosed', occupation_band:'undisclosed', straight_lined:false, interrupted:false, demo:false, source:'local'},
+    consent:{upload:true, timestamp:new Date().toISOString(), version:'1.0'}
+  };
+}
+function submitContribution(){
+  if(isDemo) return;
+  const toggle = $('contrib-toggle');
+  if(!toggle.checked) return;
+  if(!confirm('确认匿名上传本次结果？只发送去标识化分数与分段，不含姓名/联系方式/开放文本；上传后可在本机取消勾选停止 future 贡献。')) return;
+  const payload = windowContribution();
+  if(!payload) return;
+  payload.consent.upload = true;
+  fetch('/api/contribute',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    .then(r => { if(r.status === 503) throw new Error('data pool disabled'); if(!r.ok) throw new Error('HTTP '+r.status); toast('匿名结果已上传 ✓'); })
+    .catch(e => toast(e.message === 'data pool disabled' ? '数据池未启用（服务端未配置 research key），本地结果已保留' : '上传未成功，本地结果已保留'));
+}
+(function initContrib(){
+  if(isDemo){ $('contrib-card').style.display = 'none'; return; }
+  const toggle = $('contrib-toggle');
+  const btn = $('contrib-upload');
+  try { toggle.checked = localStorage.getItem(CONTRIB_KEY) === '1'; } catch(e) {}
+  const sync = () => { btn.style.display = toggle.checked ? '' : 'none';
+    try { localStorage.setItem(CONTRIB_KEY, toggle.checked ? '1' : '0'); } catch(e) {} };
+  toggle.addEventListener('change', sync); sync();
+  btn.onclick = submitContribution;
+})();
+
+/* 结果页按钮 */
+$('btn-share').onclick = () => sharePNG();
+$('btn-copy-report').onclick = () => copyText(buildReport(), '报告已复制');
+$('btn-png').onclick = () => radarPNG();
+$('btn-json').onclick = () => {
+  const payload = {
+    dimensions: lastResult.ranked,
+    perDimension: lastResult.per,
+    answers: QS.map((q,i) => ({dim:q.k, w:q.w, type:q.t, value:answers[i]})),
+    behMean: lastResult.behMean,
+    selfMean: lastResult.selfMean,
+    exportedAt: new Date().toISOString()
+  };
+  download('talent-radar.json', JSON.stringify(payload, null, 2), 'application/json');
+  toast('已导出 JSON ✓');
+};
+$('btn-again').onclick = () => {
+  clearSaved();
+  answers = new Array(QS.length).fill(0);
+  cursor = 0;
+  $('panel-result').classList.add('hidden');
+  $('panel-intro').classList.remove('hidden');
+  $('btn-resume').classList.add('hidden');
+};
+
+/* Prompt 复制 */
+$('pA').textContent = PROMPT_A;
+$('pB').textContent = PROMPT_B;
+$('pC').textContent = PROMPT_C;
+document.querySelectorAll('[data-copy]').forEach(b => {
+  b.onclick = () => {
+    const map = {pA:PROMPT_A, pB:PROMPT_B, pC:PROMPT_C};
+    copyText(map[b.dataset.copy], 'Prompt 已复制');
+  };
+});
+
+/* =========================================================
+   12b. 求职定位（纯本地生成，复制即用）
+   ========================================================= */
+function buildCareerText(){
+  const d = lastResult;
+  const top3 = d.ranked.slice(0, 3);
+  const last = d.ranked[d.ranked.length - 1];
+  const pair = pairName(top3[0].k, top3[1].k);
+  const alias = k => DIMS.find(x => x.k === k).a;
+  const gap = (d.behMean - d.selfMean);
+
+  const lines = [];
+  lines.push('=== 求职定位（天赋雷达自动生成） ===');
+  lines.push('');
+  lines.push('【一句话定位】');
+  lines.push(pair[0] + '：' + pair[1]);
+  lines.push('');
+  lines.push('【简历「自我定位」段落（可直接改写进简历）】');
+  lines.push(
+    '我的能力主线是「' + top3[0].n + ' × ' + top3[1].n + '」，'
+    + '表现为：' + ADVICE[top3[0].k].dir[0] + '；同时' + ADVICE[top3[1].k].dir[0].replace(/^善于|^能|^会/, '擅长') + '。'
+    + '在我的自测结构里，' + alias(top3[0].k) + '与' + alias(top3[1].k)
+    + '是能量最集中的两维（' + top3[0].s + '/' + top3[1].s + ' 分），适合承担需要'
+    + top3[0].n + '与' + top3[1].n + '交叉配合的岗位。'
+  );
+  lines.push('');
+  lines.push('【面试「天赋故事」×2（STAR 结构提示，替换成你的真实经历）】');
+  top3.slice(0, 2).forEach((t, i) => {
+    lines.push('故事 ' + (i + 1) + ' · 围绕「' + t.n + '」（' + t.s + ' 分）：');
+    lines.push('  S/T（情境任务）：什么时候、什么项目，需要你发挥' + t.n + '？');
+    lines.push('  A（行动）：' + ADVICE[t.k].dir[0] + '——把这一条落到你当时具体做了什么。');
+    lines.push('  R（结果）：量化结果（数字/他人反馈/被复用的证据）。');
+    lines.push('  追问预案：面试官若问「这算不算天赋」——答：这件事我自发做、上手比同龄人快、有持续正反馈，三条件齐了。');
+    lines.push('');
+  });
+  lines.push('【规避提示】');
+  lines.push('低维「' + last.n + '」（' + last.s + ' 分）相关岗位要谨慎：' + ADVICE[last.k].trap);
+  if(Math.abs(gap) > 0.28){
+    lines.push('');
+    lines.push(gap > 0
+      ? '【行为分高于自评分】你的实际表现比你自认为的强，面试里别过度谦虚，直接亮证据。'
+      : '【自评分高于行为分】先做出 1 个可展示的成品再谈这项能力，简历上用成品说话。');
+  }
+  return lines.join('\n');
+}
+$('btn-career').onclick = () => {
+  if(!lastResult){ toast('请先完成测评'); return; }
+  copyText(buildCareerText(), '求职定位已复制 ✓');
+};
+
+/* =========================================================
+   12c. AI 深挖（本地 Magpie 网关，serve.py 同源反代）
+   ========================================================= */
+const AI_ENDPOINT = '/v1/chat/completions';
+let chatMsgs = [];   // 完整对话历史 [{role, content}]
+
+/* 网关探活：GET /v1/models 走同源反代 */
+async function checkGateway(){
+  const dot = $('gw-dot'), txt = $('gw-text');
+  dot.className = 'dot';
+  txt.textContent = '检测中…';
+  try{
+    const r = await fetch('/v1/models', {signal: AbortSignal.timeout(8000)});
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    dot.className = 'dot ok';
+    txt.textContent = '网关在线 · ' + (j.data ? j.data.length + ' 个模型可用' : '已连接');
+    return true;
+  }catch(e){
+    dot.className = 'dot bad';
+    txt.textContent = '网关不可达（先跑 python3 serve.py）';
+    return false;
+  }
+}
+$('btn-gw-check').onclick = () => checkGateway();
+
+/* 系统提示词：去锚定——不注入分数与预设解释，只给追问纪律和待检验假设 */
+function buildSysPrompt(){
+  const d = lastResult;
+  const hypothesis = d.ranked.slice(0, 3).map(x => x.n).join('、');
+  return [
+    '你是一位严格但友善的天赋挖掘师。用户刚完成一轮结构化自测，',
+    '目前待检验的假设方向是：' + hypothesis + '（仅作为起点，不是结论）。',
+    '',
+    '你的任务：通过追问把「自评」换成「行为证据」。纪律：',
+    '1. 一次只问一个问题，等用户回答后再问下一个；',
+    '2. 每个问题都逼出具体事件：什么时候、什么事、做了什么、结果如何、重复过几次；',
+    '3. 先盲评：围绕候选方向追问，同时必须用至少 2 个问题主动探查其他方向（排除误判与遗漏）；',
+    '4. 每个方向至少追问一次「这件事有没有搞砸/表现平庸的反例？」；',
+    '5. 用户回答含糊时，追问到具体；用户给出事件后，追问「这事你重复做过吗/别人怎么反馈」；',
+    '6. 判定的证据标准：自发做（不用人推）× 上手快 × 有正反馈，三者齐才算；证据不足时允许结论少于 3 项；',
+    '7. 大约问 7-9 个问题后，告诉用户「可以生成报告了」，让用户点「生成洞察报告」按钮；',
+    '8. 全程中文，简短口语化，每次回复不超过 120 字（问题本身除外）。',
+  ].join('\n');
+}
+
+/* 单次对话请求 */
+async function aiCall(msgs, maxTokens){
+  const body = {
+    model: $('ai-model').value.trim() || 'opencode-go/deepseek-v4.1-flash',
+    messages: msgs,
+    max_tokens: maxTokens || 500,
+    temperature: 0.7,
+  };
+  const r = await fetch(AI_ENDPOINT, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(120000),
+  });
+  const j = await r.json();
+  if(j.error) throw new Error(j.error.message || JSON.stringify(j.error));
+  const c = j.choices && j.choices[0] && j.choices[0].message;
+  const text = (c && (c.content || '').trim()) || (c && c.reasoning_content) || '（AI 返回为空，请重试）';
+  return text;
+}
+
+/* 聊天渲染 */
+function addMsg(role, text){
+  const log = $('chatlog');
+  const el = document.createElement('div');
+  el.className = 'msg ' + role;
+  el.textContent = text;
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+}
+
+/* 开始深挖：切到本标签页时刷新面板状态 */
+function refreshLive(){
+  const has = !!lastResult;
+  $('live-empty').classList.toggle('hidden', has);
+  $('live-main').classList.toggle('hidden', !has);
+}
+document.querySelectorAll('.tabs button').forEach(b => {
+  if(b.dataset.tab === 'live'){
+    b.addEventListener('click', () => {
+      refreshLive();
+      if(lastResult && chatMsgs.length === 0) startDig();
+    });
+  }
+});
+
+async function startDig(){
+  if(!await checkGateway()) { addMsg('sys', '网关不在线，先在终端跑 python3 serve.py'); return; }
+  chatMsgs = [{role: 'system', content: buildSysPrompt()}];
+  $('chatlog').innerHTML = '';
+  addMsg('sys', '深挖开始——AI 一次只问一题，答完点发送（不提前告诉分数，先盲评）');
+  addMsg('me', '我已经完成了一轮自测，请按你的纪律开始追问，先从具体事件问起。');
+  chatMsgs.push({role: 'user', content: '我已经完成了一轮自测，请按你的纪律开始追问，先从具体事件问起。'});
+  addMsg('ai', '…');
+  try{
+    const text = await aiCall(chatMsgs, 400);
+    $('chatlog').lastChild.textContent = text;
+    chatMsgs.push({role: 'assistant', content: text});
+  }catch(e){
+    $('chatlog').lastChild.textContent = '⚠ 请求失败：' + e.message;
+  }
+}
+
+/* 发送用户回答 */
+async function sendChat(){
+  const ta = $('chat-input');
+  const text = ta.value.trim();
+  if(!text){ toast('先写点内容再发送'); return; }
+  ta.value = '';
+  addMsg('me', text);
+  chatMsgs.push({role: 'user', content: text});
+  addMsg('ai', '…');
+  const placeholder = $('chatlog').lastChild;
+  try{
+    const reply = await aiCall(chatMsgs, 600);
+    placeholder.textContent = reply;
+    chatMsgs.push({role: 'assistant', content: reply});
+  }catch(e){
+    placeholder.textContent = '⚠ 请求失败：' + e.message;
+  }
+}
+$('btn-chat-send').onclick = () => sendChat();
+$('chat-input').addEventListener('keydown', e => {
+  if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); sendChat(); }
+});
+
+/* 生成洞察报告 */
+async function genReport(){
+  const req = [
+    '请基于本次追问对话输出完整洞察报告，直接输出，不要再提问：',
+    '① 证据表（每条候选天赋对应的具体事件：时间/事件/行为/结果/重复次数/他人反馈；没有证据的不要硬填）',
+    '② 核心天赋 0-3 项（证据不足时可以少于 3 项，宁缺毋滥；每项给出支持证据和不确定点）',
+    '③ 反向证据（哪些看似优势的方向其实证据不足或存在反例；每条写清反例）',
+    '④ 修正后的判断（不要沿用自测分数；用“较强/中等/待验证”描述，并说明与初始假设的差异）',
+    '⑤ 30 天验证实验（每项一个，写清：前测、动作、完成标准、证伪阈值——出现什么信号就说明不成立）',
+  ].join('\n');
+  addMsg('me', '（请求生成洞察报告）');
+  chatMsgs.push({role: 'user', content: req});
+  addMsg('ai', '…');
+  const placeholder = $('chatlog').lastChild;
+  placeholder.textContent = '生成中，深挖报告较长，请稍候…';
+  try{
+    const reply = await aiCall(chatMsgs, 4000);
+    placeholder.textContent = reply;
+    chatMsgs.push({role: 'assistant', content: reply});
+    toast('洞察报告已生成 ✓ 可全选复制');
+  }catch(e){
+    placeholder.textContent = '⚠ 请求失败：' + e.message;
+  }
+}
+$('btn-chat-report').onclick = () => genReport();
+
+/* 清空重聊 */
+$('btn-chat-reset').onclick = () => {
+  chatMsgs = [];
+  $('chatlog').innerHTML = '';
+  startDig();
+};
+
+/* =========================================================
+   13. 启动：检测存档
+   ========================================================= */
+(function init(){
+  if(isDemo){
+    $('btn-start').textContent = '开始试玩（前 ' + DEMO_LIMIT + ' 题）';
+    $('intro-callout').innerHTML = '试玩模式：先做前 ' + DEMO_LIMIT + ' 题，体验提问方式与节奏。<br>'
+      + '完整版本解锁全部 40 题、10 维雷达结果、差距诊断、分享卡片、AI 深挖与求职定位。<br>'
+      + '试玩不保存进度，避免和正式测评混在一起。';
+    return;
+  }
+  const saved = load();
+  if(saved && saved.answers.some(v => v > 0)){
+    answers = saved.answers;
+    cursor = saved.cursor || 0;
+    const done = saved.answers.filter(v => v > 0).length;
+    $('btn-resume').classList.remove('hidden');
+    $('btn-resume').textContent = '继续上次进度（已答 ' + done + '/' + QS.length + '）';
+    if(done === QS.length) finish();
+  }
+})();
+</script>
+</body>
+</html>
